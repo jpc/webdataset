@@ -173,16 +173,17 @@ def tar_file_expander(
         try:
             assert isinstance(source, dict)
             assert "stream" in source
-            for sample in tar_file_iterator(
+            for i,sample in enumerate(tar_file_iterator(
                 source["stream"],
                 handler=handler,
                 select_files=select_files,
                 rename_files=rename_files,
-            ):
+            )):
                 assert (
                     isinstance(sample, dict) and "data" in sample and "fname" in sample
                 )
                 sample["__url__"] = url
+                sample["__index_in_shard__"] = i
                 yield sample
         except Exception as exn:
             exn.args = exn.args + (source.get("stream"), source.get("url"))
@@ -230,7 +231,7 @@ def group_by_keys(
                 continue
             if lcase:
                 suffix = suffix.lower()
-            if current_sample is None or prefix != current_sample["__key__"]:
+            if current_sample is None or prefix != current_sample["__key__"] or filesample['__index_in_shard__'] == 0:
                 if valid_sample(current_sample):
                     yield current_sample
                 current_sample = dict(__key__=prefix, __url__=filesample["__url__"])
